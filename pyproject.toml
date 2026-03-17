@@ -1,0 +1,31 @@
+[project]
+name = "grid2benchmark"
+version = "0.1.0"
+description = "Standalone Grid2Op benchmarking library"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "grid2evaluate",
+    "grid2op",
+    "pandapower>=2.14.11",
+    "numpy>=1.26.4",
+    "pyarrow>=14.0",
+    "numba>=0.64.0",
+]
+
+[project.scripts]
+grid2benchmark = "grid2benchmark.cli:main"
+
+[tool.uv.sources]
+grid2evaluate = { git = "https://github.com/AI4REALNET/grid2evaluate" }
+grid2op = { git = "https://github.com/Grid2op/grid2op.git", rev = "env_recorder" }
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/grid2benchmark"]
