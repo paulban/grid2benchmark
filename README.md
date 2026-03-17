@@ -1,0 +1,1 @@
+This package will be developed and used for the AI-EFFECT project. It serves as an integral part of the benchmarking service. Right now, it is built on tools like grid2evaluate which are still under development, so better **do not use it** yet.
