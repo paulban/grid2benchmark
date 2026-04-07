@@ -27,7 +27,7 @@ def build_agent(env, context):
                 context["benchmark"]["max_steps"]
                 context["benchmark"]["kpis"]
                 context["scenario"]["env_name"]
-                context["scenario"]["chronic_ids"]
+                context["scenario"]["time_series_ids"]
     """
     _ = context
     return TemplateAgent(env.action_space)

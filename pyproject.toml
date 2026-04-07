@@ -27,5 +27,21 @@ package = true
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-timeout>=2.4.0",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/grid2benchmark"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Run only unit tests:   pytest -m "not integration"
+# Run only integration:  pytest -m integration
+markers = [
+    "integration: tests that spin up a real Grid2Op environment (slow)",
+]
+# Default timeout (seconds) per test; integration tests override with @pytest.mark.timeout
+timeout = 30

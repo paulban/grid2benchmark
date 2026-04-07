@@ -31,14 +31,14 @@ def _configure_warning_filters() -> None:
         return
 
 
-def _parse_chronic_ids(raw: str | None) -> tuple[int, ...] | None:
+def _parse_time_series_ids(raw: str | None) -> tuple[int, ...] | None:
     if raw is None:
         return None
 
     ids = [part.strip() for part in raw.split(",") if part.strip()]
     if not ids:
         return None
-    return tuple(int(chronic_id) for chronic_id in ids)
+    return tuple(int(ts_id) for ts_id in ids)
 
 
 def _load_scenarios(scenarios_file: Path) -> tuple[ScenarioConfig, ...]:
@@ -56,19 +56,19 @@ def _load_scenarios(scenarios_file: Path) -> tuple[ScenarioConfig, ...]:
             raise ValueError(f"Scenario index {idx} must be a JSON object")
 
         env_name = item.get("env_name", DEFAULT_ENV_NAME)
-        chronic_ids = item.get("chronic_ids")
+        time_series_ids = item.get("time_series_ids")
         env_path = item.get("env_path")
 
-        parsed_chronic_ids: tuple[int, ...] | None = None
-        if chronic_ids is not None:
-            if not isinstance(chronic_ids, list):
-                raise ValueError(f"Scenario index {idx} chronic_ids must be a list")
-            parsed_chronic_ids = tuple(int(v) for v in chronic_ids)
+        parsed_time_series_ids: tuple[int, ...] | None = None
+        if time_series_ids is not None:
+            if not isinstance(time_series_ids, list):
+                raise ValueError(f"Scenario index {idx} time_series_ids must be a list")
+            parsed_time_series_ids = tuple(int(v) for v in time_series_ids)
 
         scenarios.append(
             ScenarioConfig(
                 env_name=str(env_name),
-                chronic_ids=parsed_chronic_ids,
+                time_series_ids=parsed_time_series_ids,
                 env_path=Path(env_path) if env_path else None,
             )
         )
@@ -100,9 +100,9 @@ def main() -> None:
         "--env", default=None, help="Grid2Op environment name (single-scenario mode)"
     )
     run_p.add_argument(
-        "--chronics",
+        "--time-series",
         default=None,
-        help="Comma-separated chronic ids for --env mode (default: all chronics)",
+        help="Comma-separated time series ids for --env mode (default: all)",
     )
     run_p.add_argument(
         "--scenarios",
@@ -134,7 +134,7 @@ def main() -> None:
         scenarios = (
             ScenarioConfig(
                 env_name=args.env or DEFAULT_ENV_NAME,
-                chronic_ids=_parse_chronic_ids(args.chronics),
+                time_series_ids=_parse_time_series_ids(args.time_series),
             ),
         )
 

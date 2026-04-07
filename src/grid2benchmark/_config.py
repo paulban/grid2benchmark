@@ -20,19 +20,19 @@ DEFAULT_KPIS = AVAILABLE_KPI_NAMES
 @dataclass(frozen=True)
 class ScenarioConfig:
     env_name: str = DEFAULT_ENV_NAME
-    chronic_ids: tuple[int, ...] | None = None
+    time_series_ids: tuple[int, ...] | None = None
     env_path: Path | None = None
 
     def __post_init__(self) -> None:
         if not self.env_name:
             raise ValueError("env_name must be a non-empty string")
 
-        if self.chronic_ids is not None:
-            object.__setattr__(self, "chronic_ids", tuple(self.chronic_ids))
-            if len(self.chronic_ids) == 0:
-                raise ValueError("chronic_ids must not be empty when provided")
-            if any(chronic_id < 0 for chronic_id in self.chronic_ids):
-                raise ValueError("chronic_ids must contain non-negative integers")
+        if self.time_series_ids is not None:
+            object.__setattr__(self, "time_series_ids", tuple(self.time_series_ids))
+            if len(self.time_series_ids) == 0:
+                raise ValueError("time_series_ids must not be empty when provided")
+            if any(ts_id < 0 for ts_id in self.time_series_ids):
+                raise ValueError("time_series_ids must contain non-negative integers")
 
         if self.env_path is not None:
             object.__setattr__(self, "env_path", Path(self.env_path))

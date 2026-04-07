@@ -30,12 +30,12 @@ def _call_agent_act(agent: Any, observation: Any, reward: float, done: bool) -> 
     return act_fn(observation, reward, done)
 
 
-def _resolve_chronic_ids(env: Any, scenario: ScenarioConfig) -> list[int]:
-    if scenario.chronic_ids is not None:
-        return list(scenario.chronic_ids)
+def _resolve_time_series_ids(env: Any, scenario: ScenarioConfig) -> list[int]:
+    if scenario.time_series_ids is not None:
+        return list(scenario.time_series_ids)
 
-    available_chronics = env.chronics_handler.available_chronics()
-    return list(range(len(available_chronics)))
+    available_time_series = env.chronics_handler.available_chronics()
+    return list(range(len(available_time_series)))
 
 
 def _make_env(grid2op_module: Any, scenario: ScenarioConfig) -> Any:
@@ -50,9 +50,9 @@ def _run_episode(
     agent: Any,
     max_steps: int,
     episode_index: int,
-    chronic_id: int,
+    time_series_id: int,
 ) -> dict[str, Any]:
-    reset_result = env_rec.reset(options={"time serie id": chronic_id})
+    reset_result = env_rec.reset(options={"time serie id": time_series_id})
     obs = reset_result[0] if isinstance(reset_result, tuple) else reset_result
 
     done = False
@@ -78,7 +78,7 @@ def _run_episode(
 
     return {
         "episode_index": episode_index,
-        "chronic_id": chronic_id,
+        "time_series_id": time_series_id,
         "steps": steps,
         "overload_violations": overload_violations,
         "runtime_seconds": time.perf_counter() - started,
@@ -145,7 +145,7 @@ def run_scenarios(config: BenchmarkConfig, module: ModuleType) -> dict[str, Any]
 
     for scenario_idx, scenario in enumerate(config.scenarios):
         env = _make_env(grid2op, scenario)
-        chronic_ids = _resolve_chronic_ids(env, scenario)
+        time_series_ids = _resolve_time_series_ids(env, scenario)
 
         with tempfile.TemporaryDirectory(prefix="benchmark_record_") as record_dir:
             record_path = Path(record_dir)
@@ -162,7 +162,7 @@ def run_scenarios(config: BenchmarkConfig, module: ModuleType) -> dict[str, Any]
                         "env_path": (
                             str(scenario.env_path) if scenario.env_path else None
                         ),
-                        "chronic_ids": chronic_ids,
+                        "time_series_ids": time_series_ids,
                     },
                 }
 
@@ -180,9 +180,9 @@ def run_scenarios(config: BenchmarkConfig, module: ModuleType) -> dict[str, Any]
                         agent=agent,
                         max_steps=config.max_steps,
                         episode_index=episode_idx,
-                        chronic_id=chronic_id,
+                        time_series_id=time_series_id,
                     )
-                    for episode_idx, chronic_id in enumerate(chronic_ids)
+                    for episode_idx, time_series_id in enumerate(time_series_ids)
                 ]
 
             kpis = evaluate_kpis(record_path, episode_results, config.kpis)
@@ -195,7 +195,7 @@ def run_scenarios(config: BenchmarkConfig, module: ModuleType) -> dict[str, Any]
                     "env_path": str(scenario.env_path) if scenario.env_path else None,
                     "fixed_environment": True,
                 },
-                "executed_chronic_ids": chronic_ids,
+                "executed_time_series_ids": time_series_ids,
                 "episodes": episode_results,
                 "kpis": kpis,
             }
