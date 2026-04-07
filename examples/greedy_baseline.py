@@ -1,6 +1,6 @@
 """Grid2Op baseline algorithm — drop-in example for grid2benchmark.
 
-Tries RecoPowerlineAgent first, falls back to DoNothingAgent.
+Uses Grid2Op greedy agents when available.
 """
 
 from __future__ import annotations
@@ -13,20 +13,30 @@ class BaselineWrapper:
 
     def _init_agent(self, env) -> None:
         try:
-            from grid2op.Agent import RecoPowerlineAgent
+            from grid2op.Agent import TopologyGreedy
 
-            self._agent = RecoPowerlineAgent(env.action_space)
+            self._agent = TopologyGreedy(env.action_space)
             return
         except Exception:
             pass
 
         try:
-            from grid2op.Agent import DoNothingAgent
+            from grid2op.Agent import GreedyAgent
 
-            self._agent = DoNothingAgent(env.action_space)
+            self._agent = GreedyAgent(env.action_space)
+            return
+        except Exception:
+            pass
+
+        try:
+            from grid2op.Agent import RecoPowerlineAgent
+
+            self._agent = RecoPowerlineAgent(env.action_space)
             return
         except Exception as exc:
-            raise RuntimeError("Unable to create a Grid2Op baseline agent.") from exc
+            raise RuntimeError(
+                "Unable to create a Grid2Op greedy baseline agent."
+            ) from exc
 
     def act(self, observation, reward=0.0, done=False):
         try:

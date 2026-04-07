@@ -22,7 +22,12 @@ def build_agent(env, context):
 
     Args:
         env: Grid2Op environment (or EnvRecorder wrapping one).
-        context: Dict with benchmark configuration keys.
+        context: Dict with benchmark and scenario metadata.
+            Example keys:
+                context["benchmark"]["max_steps"]
+                context["benchmark"]["kpis"]
+                context["scenario"]["env_name"]
+                context["scenario"]["chronic_ids"]
     """
     _ = context
     return TemplateAgent(env.action_space)

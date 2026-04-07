@@ -4,12 +4,14 @@ import argparse
 import json
 import warnings
 from pathlib import Path
+from typing import Any
 
 from ._config import (
+    DEFAULT_KPIS,
     DEFAULT_ENV_NAME,
-    DEFAULT_EPISODES,
     DEFAULT_MAX_STEPS,
     BenchmarkConfig,
+    ScenarioConfig,
 )
 from . import run_benchmark
 
@@ -29,6 +31,60 @@ def _configure_warning_filters() -> None:
         return
 
 
+def _parse_chronic_ids(raw: str | None) -> tuple[int, ...] | None:
+    if raw is None:
+        return None
+
+    ids = [part.strip() for part in raw.split(",") if part.strip()]
+    if not ids:
+        return None
+    return tuple(int(chronic_id) for chronic_id in ids)
+
+
+def _load_scenarios(scenarios_file: Path) -> tuple[ScenarioConfig, ...]:
+    payload: Any = json.loads(scenarios_file.read_text(encoding="utf-8"))
+
+    if isinstance(payload, dict) and "scenarios" in payload:
+        payload = payload["scenarios"]
+
+    if not isinstance(payload, list):
+        raise ValueError("Scenario file must contain a list or {'scenarios': [...]}.")
+
+    scenarios: list[ScenarioConfig] = []
+    for idx, item in enumerate(payload):
+        if not isinstance(item, dict):
+            raise ValueError(f"Scenario index {idx} must be a JSON object")
+
+        env_name = item.get("env_name", DEFAULT_ENV_NAME)
+        chronic_ids = item.get("chronic_ids")
+        env_path = item.get("env_path")
+
+        parsed_chronic_ids: tuple[int, ...] | None = None
+        if chronic_ids is not None:
+            if not isinstance(chronic_ids, list):
+                raise ValueError(f"Scenario index {idx} chronic_ids must be a list")
+            parsed_chronic_ids = tuple(int(v) for v in chronic_ids)
+
+        scenarios.append(
+            ScenarioConfig(
+                env_name=str(env_name),
+                chronic_ids=parsed_chronic_ids,
+                env_path=Path(env_path) if env_path else None,
+            )
+        )
+
+    return tuple(scenarios)
+
+
+def _parse_kpis(raw: str | None) -> tuple[str, ...]:
+    if raw is None:
+        return tuple(DEFAULT_KPIS)
+    parsed = tuple(part.strip() for part in raw.split(",") if part.strip())
+    if not parsed:
+        raise ValueError("--kpis must contain at least one KPI name")
+    return parsed
+
+
 def main() -> None:
     _configure_warning_filters()
 
@@ -41,10 +97,22 @@ def main() -> None:
     run_p = sub.add_parser("run", help="Run a benchmark against a Grid2Op environment")
     run_p.add_argument("--algorithm", required=True, help="Path to algorithm .py file")
     run_p.add_argument(
-        "--env", default=DEFAULT_ENV_NAME, help="Grid2Op environment name"
+        "--env", default=None, help="Grid2Op environment name (single-scenario mode)"
     )
     run_p.add_argument(
-        "--episodes", type=int, default=DEFAULT_EPISODES, help="Number of episodes"
+        "--chronics",
+        default=None,
+        help="Comma-separated chronic ids for --env mode (default: all chronics)",
+    )
+    run_p.add_argument(
+        "--scenarios",
+        default=None,
+        help="Path to scenario JSON file",
+    )
+    run_p.add_argument(
+        "--kpis",
+        default=",".join(DEFAULT_KPIS),
+        help="Comma-separated KPI names to evaluate",
     )
     run_p.add_argument(
         "--max-steps", type=int, default=DEFAULT_MAX_STEPS, help="Max steps per episode"
@@ -57,10 +125,23 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    if args.scenarios and args.env:
+        raise ValueError("Use either --scenarios or --env, not both")
+
+    if args.scenarios:
+        scenarios = _load_scenarios(Path(args.scenarios))
+    else:
+        scenarios = (
+            ScenarioConfig(
+                env_name=args.env or DEFAULT_ENV_NAME,
+                chronic_ids=_parse_chronic_ids(args.chronics),
+            ),
+        )
+
     config = BenchmarkConfig(
-        env_name=args.env,
+        scenarios=scenarios,
         max_steps=args.max_steps,
-        episodes=args.episodes,
+        kpis=_parse_kpis(args.kpis),
     )
 
     result = run_benchmark(Path(args.algorithm), config)
