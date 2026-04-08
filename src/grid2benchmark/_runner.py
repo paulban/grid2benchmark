@@ -1,3 +1,13 @@
+"""Scenario execution engine for grid2benchmark.
+
+This module is responsible for:
+
+- creating Grid2Op environments,
+- executing selected time-series episodes,
+- collecting per-episode metadata,
+- evaluating KPIs and producing aggregate summaries.
+"""
+
 from __future__ import annotations
 
 import inspect
@@ -31,6 +41,7 @@ def _call_agent_act(agent: Any, observation: Any, reward: float, done: bool) -> 
 
 
 def _resolve_time_series_ids(env: Any, scenario: ScenarioConfig) -> list[int]:
+    """Resolve the list of time-series IDs to run for a scenario."""
     if scenario.time_series_ids is not None:
         return list(scenario.time_series_ids)
 
@@ -39,6 +50,7 @@ def _resolve_time_series_ids(env: Any, scenario: ScenarioConfig) -> list[int]:
 
 
 def _make_env(grid2op_module: Any, scenario: ScenarioConfig) -> Any:
+    """Create a Grid2Op environment from scenario configuration."""
     make_kwargs: dict[str, Any] = {"test": True}
     if scenario.env_path is not None:
         make_kwargs["dataset_path"] = str(scenario.env_path)
@@ -52,6 +64,18 @@ def _run_episode(
     episode_index: int,
     time_series_id: int,
 ) -> dict[str, Any]:
+    """Execute one episode for a specific time-series ID.
+
+    Args:
+        env_rec: Active EnvRecorder-wrapped environment.
+        agent: Built benchmark agent.
+        max_steps: Maximum number of environment steps to execute.
+        episode_index: Index in the executed scenario sequence.
+        time_series_id: Time-series identifier passed to Grid2Op reset.
+
+    Returns:
+        Episode metrics dictionary.
+    """
     reset_result = env_rec.reset(options={"time serie id": time_series_id})
     obs = reset_result[0] if isinstance(reset_result, tuple) else reset_result
 
@@ -87,6 +111,7 @@ def _run_episode(
 
 
 def _extract_numeric_values(value: Any) -> list[float]:
+    """Recursively collect numeric values from nested KPI structures."""
     if isinstance(value, bool):
         return []
     if isinstance(value, numbers.Real):
@@ -105,6 +130,10 @@ def _extract_numeric_values(value: Any) -> list[float]:
 
 
 def _aggregate_summary(scenario_results: list[dict[str, Any]]) -> dict[str, Any]:
+    """Aggregate numeric KPI values across all scenarios.
+
+    The resulting summary computes mean/min/max/count for each numeric KPI leaf.
+    """
     per_key_values: dict[str, list[float]] = {}
     total_episodes = 0
 
@@ -136,7 +165,18 @@ def _aggregate_summary(scenario_results: list[dict[str, Any]]) -> dict[str, Any]
 
 
 def run_scenarios(config: BenchmarkConfig, module: ModuleType) -> dict[str, Any]:
-    """Run all configured scenarios and return per-scenario results with summary."""
+    """Run all benchmark scenarios for a loaded algorithm module.
+
+    Args:
+        config: Benchmark settings including scenarios, max steps, and KPIs.
+        module: Imported algorithm module with ``build_agent`` callable.
+
+    Returns:
+        Benchmark result dictionary with ``scenarios`` and ``summary`` keys.
+
+    Raises:
+        ValueError: If ``build_agent`` returns an object without callable ``act``.
+    """
     import grid2op  # type: ignore
     from grid2op.Environment.EnvRecorder import EnvRecorder  # type: ignore
 

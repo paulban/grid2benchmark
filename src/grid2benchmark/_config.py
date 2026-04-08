@@ -1,3 +1,9 @@
+"""Configuration models and constants for grid2benchmark.
+
+This module defines immutable dataclasses that represent benchmark execution
+inputs and performs validation at construction time.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -19,11 +25,21 @@ DEFAULT_KPIS = AVAILABLE_KPI_NAMES
 
 @dataclass(frozen=True)
 class ScenarioConfig:
+    """Configuration for a single benchmark scenario.
+
+    Attributes:
+        env_name: Grid2Op environment name to load.
+        time_series_ids: Optional list of time-series indices to execute.
+            If ``None``, all available time series are executed.
+        env_path: Optional dataset path override passed to ``grid2op.make``.
+    """
+
     env_name: str = DEFAULT_ENV_NAME
     time_series_ids: tuple[int, ...] | None = None
     env_path: Path | None = None
 
     def __post_init__(self) -> None:
+        """Normalize and validate scenario fields."""
         if not self.env_name:
             raise ValueError("env_name must be a non-empty string")
 
@@ -40,6 +56,14 @@ class ScenarioConfig:
 
 @dataclass(frozen=True)
 class BenchmarkConfig:
+    """Top-level benchmark execution configuration.
+
+    Attributes:
+        scenarios: One or more :class:`ScenarioConfig` entries.
+        max_steps: Maximum number of steps per episode.
+        kpis: KPI names to evaluate.
+    """
+
     scenarios: tuple[ScenarioConfig, ...] = field(
         default_factory=lambda: (ScenarioConfig(),)
     )
@@ -47,6 +71,7 @@ class BenchmarkConfig:
     kpis: tuple[str, ...] = DEFAULT_KPIS
 
     def __post_init__(self) -> None:
+        """Normalize list-like inputs and validate constraints."""
         object.__setattr__(self, "scenarios", tuple(self.scenarios))
         object.__setattr__(self, "kpis", tuple(self.kpis))
 

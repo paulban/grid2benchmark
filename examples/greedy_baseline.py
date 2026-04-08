@@ -7,11 +7,14 @@ from __future__ import annotations
 
 
 class BaselineWrapper:
+    """Compatibility wrapper around available Grid2Op greedy agents."""
+
     def __init__(self, env):
         self._agent = None
         self._init_agent(env)
 
     def _init_agent(self, env) -> None:
+        """Instantiate the first available greedy-style baseline agent."""
         try:
             from grid2op.Agent import TopologyGreedy
 
@@ -39,6 +42,7 @@ class BaselineWrapper:
             ) from exc
 
     def act(self, observation, reward=0.0, done=False):
+        """Delegate action selection while supporting signature differences."""
         try:
             return self._agent.act(observation, reward, done)
         except TypeError:
@@ -49,5 +53,6 @@ class BaselineWrapper:
 
 
 def build_agent(env, context):
+    """Build the example greedy baseline agent for benchmarking."""
     _ = context
     return BaselineWrapper(env)

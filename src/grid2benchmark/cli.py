@@ -1,3 +1,9 @@
+"""Command-line interface for grid2benchmark.
+
+Entry point used by the ``grid2benchmark`` console script and
+``python -m grid2benchmark.cli``.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -32,6 +38,14 @@ def _configure_warning_filters() -> None:
 
 
 def _parse_time_series_ids(raw: str | None) -> tuple[int, ...] | None:
+    """Parse comma-separated time-series IDs from CLI input.
+
+    Args:
+        raw: String like ``"0,1,2"`` or ``None``.
+
+    Returns:
+        Tuple of integer IDs, or ``None`` if no IDs were provided.
+    """
     if raw is None:
         return None
 
@@ -42,6 +56,13 @@ def _parse_time_series_ids(raw: str | None) -> tuple[int, ...] | None:
 
 
 def _load_scenarios(scenarios_file: Path) -> tuple[ScenarioConfig, ...]:
+    """Load scenario definitions from JSON file.
+
+    Accepted formats:
+
+    - list of scenario objects
+    - object containing ``{"scenarios": [...]}``
+    """
     payload: Any = json.loads(scenarios_file.read_text(encoding="utf-8"))
 
     if isinstance(payload, dict) and "scenarios" in payload:
@@ -77,6 +98,7 @@ def _load_scenarios(scenarios_file: Path) -> tuple[ScenarioConfig, ...]:
 
 
 def _parse_kpis(raw: str | None) -> tuple[str, ...]:
+    """Parse comma-separated KPI names from CLI input."""
     if raw is None:
         return tuple(DEFAULT_KPIS)
     parsed = tuple(part.strip() for part in raw.split(",") if part.strip())
@@ -86,6 +108,11 @@ def _parse_kpis(raw: str | None) -> tuple[str, ...]:
 
 
 def main() -> None:
+    """CLI main function.
+
+    Parses command-line arguments, builds benchmark configuration, runs the
+    benchmark, and prints or writes JSON output.
+    """
     _configure_warning_filters()
 
     parser = argparse.ArgumentParser(

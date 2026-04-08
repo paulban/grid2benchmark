@@ -1,3 +1,11 @@
+"""KPI evaluation logic for benchmark episode outputs.
+
+This module combines:
+
+- manual KPIs computed directly from episode metadata,
+- optional grid2evaluate KPIs computed from EnvRecorder outputs.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -13,6 +21,15 @@ def _compute_manual_kpis(
     episode_results: list[dict[str, Any]],
     selected_kpis: set[str],
 ) -> dict[str, Any]:
+    """Compute manual KPIs directly from episode-level runtime data.
+
+    Args:
+        episode_results: Episode dictionaries produced by the runner.
+        selected_kpis: KPI names requested by the caller.
+
+    Returns:
+        Dictionary with the subset of manual KPI blocks requested.
+    """
     total_steps = sum(e["steps"] for e in episode_results)
     total_violations = sum(e["overload_violations"] for e in episode_results)
     total_runtime = sum(e["runtime_seconds"] for e in episode_results)
@@ -50,7 +67,20 @@ def evaluate_kpis(
     episode_results: list[dict[str, Any]],
     kpis: tuple[str, ...],
 ) -> dict[str, Any]:
-    """Compute KPIs from EnvRecorder parquet files plus manual episode statistics."""
+    """Evaluate selected KPIs using manual and optional grid2evaluate backends.
+
+    Args:
+        record_directory: Directory containing EnvRecorder files.
+        episode_results: Episode dictionaries returned by simulation.
+        kpis: Names of KPIs to compute.
+
+    Returns:
+        KPI dictionary containing requested metrics and an
+        ``evaluation_backend`` marker.
+
+    Raises:
+        ValueError: If unknown KPI names are requested.
+    """
     selected_kpis = set(kpis)
     invalid_kpis = selected_kpis - set(AVAILABLE_KPI_NAMES)
     if invalid_kpis:

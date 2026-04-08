@@ -10,9 +10,11 @@ class TemplateAgent:
     """Minimal no-op agent for validation runs."""
 
     def __init__(self, action_space):
+        """Store Grid2Op action space for no-op action creation."""
         self._action_space = action_space
 
     def act(self, observation):
+        """Return a no-op action for the current observation."""
         # Return a baseline no-op action.
         return self._action_space()
 
