@@ -170,3 +170,8 @@ Recommended API modules:
 - `grid2benchmark._runner`
 - `grid2benchmark._kpi`
 - `grid2benchmark.cli`
+
+## Next steps
+- give grid data to benchmark as input files in different structures (pandapower, matpower, cgmes, powsybl)
+- also pass time series data to benchmark
+- add further kpis --> in grid2evaluate? updated versions here?
