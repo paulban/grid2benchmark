@@ -94,7 +94,9 @@ class TestLoadScenarios:
         scenarios = _load_scenarios(f)
         assert scenarios[0].env_name == DEFAULT_ENV_NAME
         assert scenarios[0].time_series_ids is None
-        assert scenarios[0].env_path is None
+        assert scenarios[0].topology is None
+        assert scenarios[0].time_series is None
+        assert scenarios[0].backend is None
 
     def test_time_series_ids_parsed(self, tmp_path: Path):
         f = self._write(
@@ -104,13 +106,43 @@ class TestLoadScenarios:
         scenarios = _load_scenarios(f)
         assert scenarios[0].time_series_ids == (0, 1, 2)
 
-    def test_env_path_parsed(self, tmp_path: Path):
+    def test_topology_parsed(self, tmp_path: Path):
+        topo_file = tmp_path / "grid.json"
+        topo_file.write_text("{}", encoding="utf-8")
         f = self._write(
             tmp_path,
-            [{"env_name": "l2rpn_case14_sandbox", "env_path": "/some/grid/path"}],
+            [
+                {
+                    "env_name": "l2rpn_case14_sandbox",
+                    "topology": {
+                        "format": "pandapower",
+                        "path": str(topo_file),
+                    },
+                }
+            ],
         )
         scenarios = _load_scenarios(f)
-        assert scenarios[0].env_path == Path("/some/grid/path")
+        assert scenarios[0].topology is not None
+        assert scenarios[0].topology.format == "pandapower"
+
+    def test_time_series_source_parsed(self, tmp_path: Path):
+        ts_dir = tmp_path / "chronics"
+        ts_dir.mkdir()
+        f = self._write(
+            tmp_path,
+            [
+                {
+                    "env_name": "l2rpn_case14_sandbox",
+                    "time_series": {
+                        "format": "grid2op_chronics_dir",
+                        "path": str(ts_dir),
+                    },
+                }
+            ],
+        )
+        scenarios = _load_scenarios(f)
+        assert scenarios[0].time_series is not None
+        assert scenarios[0].time_series.format == "grid2op_chronics_dir"
 
     def test_multiple_scenarios(self, tmp_path: Path):
         f = self._write(
@@ -141,6 +173,71 @@ class TestLoadScenarios:
             [{"env_name": "l2rpn_case14_sandbox", "time_series_ids": 7}],
         )
         with pytest.raises(ValueError, match="time_series_ids must be a list"):
+            _load_scenarios(f)
+
+    def test_topology_requires_object(self, tmp_path: Path):
+        f = self._write(
+            tmp_path,
+            [{"env_name": "l2rpn_case14_sandbox", "topology": "bad"}],
+        )
+        with pytest.raises(ValueError, match="topology must be an object"):
+            _load_scenarios(f)
+
+    def test_topology_requires_format_and_path(self, tmp_path: Path):
+        f = self._write(
+            tmp_path,
+            [
+                {
+                    "env_name": "l2rpn_case14_sandbox",
+                    "topology": {"format": "pandapower"},
+                }
+            ],
+        )
+        with pytest.raises(ValueError, match="topology must include format and path"):
+            _load_scenarios(f)
+
+    def test_time_series_requires_object(self, tmp_path: Path):
+        f = self._write(
+            tmp_path,
+            [{"env_name": "l2rpn_case14_sandbox", "time_series": "bad"}],
+        )
+        with pytest.raises(ValueError, match="time_series must be an object"):
+            _load_scenarios(f)
+
+    def test_time_series_requires_format_and_path(self, tmp_path: Path):
+        f = self._write(
+            tmp_path,
+            [
+                {
+                    "env_name": "l2rpn_case14_sandbox",
+                    "time_series": {"format": "grid2op_chronics_dir"},
+                }
+            ],
+        )
+        with pytest.raises(
+            ValueError, match="time_series must include format and path"
+        ):
+            _load_scenarios(f)
+
+    def test_backend_parsed_from_json(self, tmp_path: Path):
+        f = self._write(
+            tmp_path,
+            [{"env_name": "l2rpn_case14_sandbox", "backend": "pandapower"}],
+        )
+        scenarios = _load_scenarios(f)
+        assert scenarios[0].backend == "pandapower"
+
+    def test_backend_defaults_to_none(self, tmp_path: Path):
+        f = self._write(tmp_path, [{"env_name": "l2rpn_case14_sandbox"}])
+        scenarios = _load_scenarios(f)
+        assert scenarios[0].backend is None
+
+    def test_invalid_backend_raises(self, tmp_path: Path):
+        f = self._write(
+            tmp_path,
+            [{"env_name": "l2rpn_case14_sandbox", "backend": "unknown_solver"}],
+        )
+        with pytest.raises(ValueError, match="Unsupported backend"):
             _load_scenarios(f)
 
     def test_returns_tuple_of_scenario_configs(self, tmp_path: Path):

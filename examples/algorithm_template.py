@@ -29,6 +29,8 @@ def build_agent(env, context):
                 context["benchmark"]["max_steps"]
                 context["benchmark"]["kpis"]
                 context["scenario"]["env_name"]
+                context["scenario"]["topology"]
+                context["scenario"]["time_series"]
                 context["scenario"]["time_series_ids"]
     """
     _ = context

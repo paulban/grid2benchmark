@@ -18,6 +18,9 @@ from ._config import (
     DEFAULT_MAX_STEPS,
     BenchmarkConfig,
     ScenarioConfig,
+    TimeSeriesSource,
+    TopologySource,
+    SUPPORTED_BACKENDS,
 )
 from . import run_benchmark
 
@@ -78,7 +81,34 @@ def _load_scenarios(scenarios_file: Path) -> tuple[ScenarioConfig, ...]:
 
         env_name = item.get("env_name", DEFAULT_ENV_NAME)
         time_series_ids = item.get("time_series_ids")
-        env_path = item.get("env_path")
+        topology_raw = item.get("topology")
+        time_series_raw = item.get("time_series")
+
+        topology: TopologySource | None = None
+        if topology_raw is not None:
+            if not isinstance(topology_raw, dict):
+                raise ValueError(f"Scenario index {idx} topology must be an object")
+            if "format" not in topology_raw or "path" not in topology_raw:
+                raise ValueError(
+                    f"Scenario index {idx} topology must include format and path"
+                )
+            topology = TopologySource(
+                format=str(topology_raw["format"]),
+                path=Path(topology_raw["path"]),
+            )
+
+        time_series: TimeSeriesSource | None = None
+        if time_series_raw is not None:
+            if not isinstance(time_series_raw, dict):
+                raise ValueError(f"Scenario index {idx} time_series must be an object")
+            if "format" not in time_series_raw or "path" not in time_series_raw:
+                raise ValueError(
+                    f"Scenario index {idx} time_series must include format and path"
+                )
+            time_series = TimeSeriesSource(
+                format=str(time_series_raw["format"]),
+                path=Path(time_series_raw["path"]),
+            )
 
         parsed_time_series_ids: tuple[int, ...] | None = None
         if time_series_ids is not None:
@@ -86,11 +116,16 @@ def _load_scenarios(scenarios_file: Path) -> tuple[ScenarioConfig, ...]:
                 raise ValueError(f"Scenario index {idx} time_series_ids must be a list")
             parsed_time_series_ids = tuple(int(v) for v in time_series_ids)
 
+        backend_raw = item.get("backend")
+        backend: str | None = str(backend_raw) if backend_raw is not None else None
+
         scenarios.append(
             ScenarioConfig(
                 env_name=str(env_name),
                 time_series_ids=parsed_time_series_ids,
-                env_path=Path(env_path) if env_path else None,
+                topology=topology,
+                time_series=time_series,
+                backend=backend,
             )
         )
 
@@ -132,6 +167,27 @@ def main() -> None:
         help="Comma-separated time series ids for --env mode (default: all)",
     )
     run_p.add_argument(
+        "--topology-file",
+        default=None,
+        help="Path to pandapower topology file (.json or .xlsx)",
+    )
+    run_p.add_argument(
+        "--time-series-dir",
+        default=None,
+        help="Path to Grid2Op-style chronics directory",
+    )
+    run_p.add_argument(
+        "--backend",
+        default=None,
+        choices=list(SUPPORTED_BACKENDS),
+        help=(
+            "Backend simulator to use. One of: "
+            + ", ".join(SUPPORTED_BACKENDS)
+            + ". Default: pandapower when --topology-file is set, "
+            "Grid2Op built-in default otherwise."
+        ),
+    )
+    run_p.add_argument(
         "--scenarios",
         default=None,
         help="Path to scenario JSON file",
@@ -162,6 +218,23 @@ def main() -> None:
             ScenarioConfig(
                 env_name=args.env or DEFAULT_ENV_NAME,
                 time_series_ids=_parse_time_series_ids(args.time_series),
+                topology=(
+                    TopologySource(
+                        format="pandapower",
+                        path=Path(args.topology_file),
+                    )
+                    if args.topology_file
+                    else None
+                ),
+                time_series=(
+                    TimeSeriesSource(
+                        format="grid2op_chronics_dir",
+                        path=Path(args.time_series_dir),
+                    )
+                    if args.time_series_dir
+                    else None
+                ),
+                backend=args.backend,
             ),
         )
 

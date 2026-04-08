@@ -13,10 +13,16 @@ from __future__ import annotations
 from pathlib import Path
 
 from ._algorithm import load_algorithm, load_algorithm_from_file, validate_algorithm
-from ._config import BenchmarkConfig, ScenarioConfig
+from ._config import BenchmarkConfig, ScenarioConfig, TimeSeriesSource, TopologySource
 from ._runner import run_scenarios
 
-__all__ = ["run_benchmark", "BenchmarkConfig", "ScenarioConfig"]
+__all__ = [
+    "run_benchmark",
+    "BenchmarkConfig",
+    "ScenarioConfig",
+    "TopologySource",
+    "TimeSeriesSource",
+]
 
 
 def run_benchmark(

@@ -12,6 +12,9 @@ from grid2benchmark._config import (
     DEFAULT_MAX_STEPS,
     BenchmarkConfig,
     ScenarioConfig,
+    TimeSeriesSource,
+    TopologySource,
+    SUPPORTED_BACKENDS,
 )
 
 
@@ -29,9 +32,44 @@ class TestScenarioConfigDefaults:
         sc = ScenarioConfig()
         assert sc.time_series_ids is None
 
-    def test_default_env_path_is_none(self):
+    def test_default_topology_is_none(self):
         sc = ScenarioConfig()
-        assert sc.env_path is None
+        assert sc.topology is None
+
+    def test_default_time_series_source_is_none(self):
+        sc = ScenarioConfig()
+        assert sc.time_series is None
+
+    def test_default_backend_is_none(self):
+        sc = ScenarioConfig()
+        assert sc.backend is None
+
+
+class TestScenarioConfigBackend:
+    def test_valid_pandapower_backend(self):
+        sc = ScenarioConfig(backend="pandapower")
+        assert sc.backend == "pandapower"
+
+    def test_valid_lightsim2grid_backend(self):
+        sc = ScenarioConfig(backend="lightsim2grid")
+        assert sc.backend == "lightsim2grid"
+
+    def test_valid_pypowsybl_backend(self):
+        sc = ScenarioConfig(backend="pypowsybl")
+        assert sc.backend == "pypowsybl"
+
+    def test_none_backend_accepted(self):
+        sc = ScenarioConfig(backend=None)
+        assert sc.backend is None
+
+    def test_unknown_backend_raises(self):
+        with pytest.raises(ValueError, match="Unsupported backend"):
+            ScenarioConfig(backend="unknown_solver")
+
+    def test_all_supported_backends_constant(self):
+        assert "pandapower" in SUPPORTED_BACKENDS
+        assert "lightsim2grid" in SUPPORTED_BACKENDS
+        assert "pypowsybl" in SUPPORTED_BACKENDS
 
 
 class TestScenarioConfigValidation:
@@ -56,18 +94,67 @@ class TestScenarioConfigValidation:
         assert isinstance(sc.time_series_ids, tuple)
         assert sc.time_series_ids == (0, 1)
 
-    def test_env_path_string_coerced_to_path(self):
-        sc = ScenarioConfig(env_path="/some/path")  # type: ignore[arg-type]
-        assert isinstance(sc.env_path, Path)
-
-    def test_env_path_path_accepted(self):
-        sc = ScenarioConfig(env_path=Path("/some/path"))
-        assert sc.env_path == Path("/some/path")
-
     def test_is_frozen(self):
         sc = ScenarioConfig()
         with pytest.raises((AttributeError, TypeError)):
             sc.env_name = "other"  # type: ignore[misc]
+
+
+class TestTopologySource:
+    def test_valid_json_file(self, tmp_path: Path):
+        topo_file = tmp_path / "grid.json"
+        topo_file.write_text("{}", encoding="utf-8")
+        src = TopologySource(format="pandapower", path=topo_file)
+        assert src.path == topo_file
+
+    def test_xlsx_file_raises(self, tmp_path: Path):
+        topo_file = tmp_path / "grid.xlsx"
+        topo_file.write_bytes(b"dummy")
+        with pytest.raises(ValueError, match=".json extension"):
+            TopologySource(format="pandapower", path=topo_file)
+
+    def test_unsupported_format_raises(self, tmp_path: Path):
+        topo_file = tmp_path / "grid.json"
+        topo_file.write_text("{}", encoding="utf-8")
+        with pytest.raises(ValueError, match="Unsupported topology format"):
+            TopologySource(format="matpower", path=topo_file)
+
+    def test_missing_file_raises(self, tmp_path: Path):
+        with pytest.raises(ValueError, match="does not exist"):
+            TopologySource(format="pandapower", path=tmp_path / "missing.json")
+
+    def test_wrong_extension_raises(self, tmp_path: Path):
+        topo_file = tmp_path / "grid.txt"
+        topo_file.write_text("x", encoding="utf-8")
+        with pytest.raises(ValueError, match=".json extension"):
+            TopologySource(format="pandapower", path=topo_file)
+
+
+class TestTimeSeriesSource:
+    def test_valid_directory(self, tmp_path: Path):
+        chronics_dir = tmp_path / "chronics"
+        chronics_dir.mkdir()
+        src = TimeSeriesSource(format="grid2op_chronics_dir", path=chronics_dir)
+        assert src.path == chronics_dir
+
+    def test_unsupported_format_raises(self, tmp_path: Path):
+        chronics_dir = tmp_path / "chronics"
+        chronics_dir.mkdir()
+        with pytest.raises(ValueError, match="Unsupported time series format"):
+            TimeSeriesSource(format="csv", path=chronics_dir)
+
+    def test_missing_path_raises(self, tmp_path: Path):
+        with pytest.raises(ValueError, match="does not exist"):
+            TimeSeriesSource(
+                format="grid2op_chronics_dir",
+                path=tmp_path / "missing",
+            )
+
+    def test_file_instead_of_directory_raises(self, tmp_path: Path):
+        file_path = tmp_path / "not_a_dir"
+        file_path.write_text("x", encoding="utf-8")
+        with pytest.raises(ValueError, match="must be a directory"):
+            TimeSeriesSource(format="grid2op_chronics_dir", path=file_path)
 
 
 # ---------------------------------------------------------------------------

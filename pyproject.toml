@@ -7,7 +7,9 @@ requires-python = ">=3.11"
 dependencies = [
     "grid2evaluate",
     "grid2op",
+    "lightsim2grid",
     "pandapower>=2.14.11",
+    "pypowsybl2grid",
     "numpy>=1.26.4",
     "pyarrow>=14.0",
     "numba>=0.64.0",
@@ -19,6 +21,7 @@ grid2benchmark = "grid2benchmark.cli:main"
 [tool.uv.sources]
 grid2evaluate = { git = "https://github.com/AI4REALNET/grid2evaluate" }
 grid2op = { git = "https://github.com/Grid2op/grid2op.git", rev = "env_recorder" }
+pypowsybl2grid = { git = "https://github.com/Grid2op/pypowsybl2grid.git" }
 
 [tool.uv]
 package = true

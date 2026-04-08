@@ -21,6 +21,7 @@ from typing import Any
 
 from ._config import BenchmarkConfig, REQUIRED_ALGORITHM_FUNCTION, ScenarioConfig
 from ._kpi import evaluate_kpis
+from ._sources import build_make_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +52,7 @@ def _resolve_time_series_ids(env: Any, scenario: ScenarioConfig) -> list[int]:
 
 def _make_env(grid2op_module: Any, scenario: ScenarioConfig) -> Any:
     """Create a Grid2Op environment from scenario configuration."""
-    make_kwargs: dict[str, Any] = {"test": True}
-    if scenario.env_path is not None:
-        make_kwargs["dataset_path"] = str(scenario.env_path)
-    return grid2op_module.make(scenario.env_name, **make_kwargs)
+    return grid2op_module.make(scenario.env_name, **build_make_kwargs(scenario))
 
 
 def _run_episode(
@@ -199,8 +197,22 @@ def run_scenarios(config: BenchmarkConfig, module: ModuleType) -> dict[str, Any]
                     },
                     "scenario": {
                         "env_name": scenario.env_name,
-                        "env_path": (
-                            str(scenario.env_path) if scenario.env_path else None
+                        "backend": scenario.backend,
+                        "topology": (
+                            {
+                                "format": scenario.topology.format,
+                                "path": str(scenario.topology.path),
+                            }
+                            if scenario.topology is not None
+                            else None
+                        ),
+                        "time_series": (
+                            {
+                                "format": scenario.time_series.format,
+                                "path": str(scenario.time_series.path),
+                            }
+                            if scenario.time_series is not None
+                            else None
                         ),
                         "time_series_ids": time_series_ids,
                     },
@@ -232,7 +244,23 @@ def run_scenarios(config: BenchmarkConfig, module: ModuleType) -> dict[str, Any]
                 "scenario_index": scenario_idx,
                 "environment": {
                     "env_name": scenario.env_name,
-                    "env_path": str(scenario.env_path) if scenario.env_path else None,
+                    "backend": scenario.backend,
+                    "topology": (
+                        {
+                            "format": scenario.topology.format,
+                            "path": str(scenario.topology.path),
+                        }
+                        if scenario.topology is not None
+                        else None
+                    ),
+                    "time_series": (
+                        {
+                            "format": scenario.time_series.format,
+                            "path": str(scenario.time_series.path),
+                        }
+                        if scenario.time_series is not None
+                        else None
+                    ),
                     "fixed_environment": True,
                 },
                 "executed_time_series_ids": time_series_ids,

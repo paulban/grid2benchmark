@@ -66,7 +66,12 @@ def _make_scenario_result(
 ) -> dict:
     return {
         "scenario_index": scenario_index,
-        "environment": {"env_name": "env", "env_path": None, "fixed_environment": True},
+        "environment": {
+            "env_name": "env",
+            "topology": None,
+            "time_series": None,
+            "fixed_environment": True,
+        },
         "executed_time_series_ids": list(range(len(episodes))),
         "episodes": episodes,
         "kpis": kpis,
