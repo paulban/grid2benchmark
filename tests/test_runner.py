@@ -150,6 +150,22 @@ class TestAggregateSummary:
         # String value "manual_only" yields no numeric values → key absent
         assert "evaluation_backend" not in summary["kpis"]
 
+    def test_grid2evaluate_kpis_not_aggregated(self):
+        results = [
+            _make_scenario_result(
+                0,
+                [_episode()],
+                {
+                    "carbon_intensity": {
+                        "per_step": [100.0, 120.0],
+                        "metadata": {"unit": "gCO2eq/kWh"},
+                    }
+                },
+            )
+        ]
+        summary = _aggregate_summary(results)
+        assert "carbon_intensity" not in summary["kpis"]
+
     def test_empty_scenario_results(self):
         summary = _aggregate_summary([])
         assert summary["scenario_count"] == 0

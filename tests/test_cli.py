@@ -48,16 +48,19 @@ class TestParseKpis:
         assert set(result) == set(DEFAULT_KPIS)
 
     def test_single_kpi(self):
-        assert _parse_kpis("survival") == ("survival",)
+        assert _parse_kpis("carbon_intensity") == ("carbon_intensity",)
 
     def test_multiple_kpis(self):
-        assert set(_parse_kpis("survival,carbon_intensity")) == {
-            "survival",
+        assert set(_parse_kpis("carbon_intensity,operation_score")) == {
             "carbon_intensity",
+            "operation_score",
         }
 
     def test_whitespace_stripped(self):
-        assert _parse_kpis(" survival , latency ") == ("survival", "latency")
+        assert _parse_kpis(" carbon_intensity , operation_score ") == (
+            "carbon_intensity",
+            "operation_score",
+        )
 
     def test_empty_string_raises(self):
         with pytest.raises(ValueError, match="at least one"):

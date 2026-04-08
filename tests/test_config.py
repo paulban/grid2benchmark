@@ -192,18 +192,20 @@ class TestBenchmarkConfigValidation:
 
     def test_unknown_kpi_raises(self):
         with pytest.raises(ValueError, match="Unknown KPI"):
-            BenchmarkConfig(kpis=("survival", "nonexistent_kpi"))
+            BenchmarkConfig(kpis=("carbon_intensity", "nonexistent_kpi"))
 
     def test_valid_single_kpi_accepted(self):
-        bc = BenchmarkConfig(kpis=("survival",))
-        assert bc.kpis == ("survival",)
+        bc = BenchmarkConfig(kpis=("carbon_intensity",))
+        assert bc.kpis == ("carbon_intensity",)
 
     def test_list_scenarios_coerced_to_tuple(self):
         bc = BenchmarkConfig(scenarios=[ScenarioConfig()])  # type: ignore[arg-type]
         assert isinstance(bc.scenarios, tuple)
 
     def test_list_kpis_coerced_to_tuple(self):
-        bc = BenchmarkConfig(kpis=["survival", "latency"])  # type: ignore[arg-type]
+        bc = BenchmarkConfig(  # type: ignore[arg-type]
+            kpis=["carbon_intensity", "operation_score"]
+        )
         assert isinstance(bc.kpis, tuple)
 
     def test_multiple_scenarios_accepted(self):
@@ -222,10 +224,6 @@ class TestBenchmarkConfigValidation:
 
 
 class TestAvailableKpiNames:
-    def test_known_manual_kpis_present(self):
-        for name in ("survival", "violations", "latency"):
-            assert name in AVAILABLE_KPI_NAMES
-
     def test_known_g2e_kpis_present(self):
         for name in (
             "carbon_intensity",

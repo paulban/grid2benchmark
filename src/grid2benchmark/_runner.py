@@ -132,6 +132,14 @@ def _aggregate_summary(scenario_results: list[dict[str, Any]]) -> dict[str, Any]
 
     The resulting summary computes mean/min/max/count for each numeric KPI leaf.
     """
+    # grid2evaluate KPIs can be rich nested payloads. Keep them in per-scenario
+    # outputs only and avoid flattening them into numeric summary stats.
+    grid2evaluate_kpi_names = {
+        "carbon_intensity",
+        "operation_score",
+        "topological_action_complexity",
+    }
+
     per_key_values: dict[str, list[float]] = {}
     total_episodes = 0
 
@@ -141,6 +149,8 @@ def _aggregate_summary(scenario_results: list[dict[str, Any]]) -> dict[str, Any]
         if not isinstance(kpis, dict):
             continue
         for kpi_name, kpi_value in kpis.items():
+            if kpi_name in grid2evaluate_kpi_names:
+                continue
             numeric_values = _extract_numeric_values(kpi_value)
             if not numeric_values:
                 continue

@@ -13,9 +13,6 @@ DEFAULT_ENV_NAME = "l2rpn_case14_sandbox"
 DEFAULT_MAX_STEPS = 200
 REQUIRED_ALGORITHM_FUNCTION = "build_agent"
 AVAILABLE_KPI_NAMES = (
-    "survival",
-    "violations",
-    "latency",
     "carbon_intensity",
     "operation_score",
     "topological_action_complexity",

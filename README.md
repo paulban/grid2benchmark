@@ -5,7 +5,7 @@ It lets you:
 
 - load a submitted algorithm module (`build_agent(env, context)`),
 - run one or multiple benchmark scenarios,
-- evaluate selected KPIs (manual + grid2evaluate),
+- evaluate selected KPIs using grid2evaluate,
 - export JSON results that include per-scenario outputs and an aggregated summary.
 
 Current implementation status for external data inputs:
@@ -18,7 +18,7 @@ Current implementation status for external data inputs:
 - Scenario-based benchmarking (`ScenarioConfig`)
 - Explicit topology/time-series sources per scenario (`TopologySource`, `TimeSeriesSource`)
 - Time-series selection per scenario (`time_series_ids`)
-- KPI filtering (`survival`, `violations`, `latency`, `carbon_intensity`, `operation_score`, `topological_action_complexity`)
+- KPI filtering (`carbon_intensity`, `operation_score`, `topological_action_complexity`)
 - Python API for orchestration systems
 - CLI entry point for local runs
 - Structured JSON output suitable for storage and downstream analytics
@@ -48,7 +48,7 @@ uv run python -m grid2benchmark.cli run \
 	--topology-file ./data/grid.json \
 	--time-series-dir ./data/chronics \
 	--time-series 0,1 \
-	--kpis survival,violations,latency \
+	--kpis carbon_intensity,operation_score \
 	--max-steps 100 \
 	--output results.json
 ```
@@ -92,7 +92,7 @@ result = run_benchmark(
 						),
 				),
 				max_steps=100,
-				kpis=("survival", "latency"),
+				kpis=("carbon_intensity", "operation_score"),
 		),
 )
 
@@ -275,7 +275,7 @@ Recommended API modules:
 - `grid2benchmark.cli`
 
 ## Next steps
-- give grid data to benchmark as input files in different structures (pandapower, matpower, cgmes, powsybl)
-- also pass time series data to benchmark
+- give grid data to benchmark as input files in different structures (cgmes, powsybl) --> need to always go via grid2op pandapower format conversion or possible to stay in pypowsbl?
+- also pass time series data to benchmark --> possible to have different form from chronics? what is typical?
 - add further kpis --> in grid2evaluate? updated versions here?
-- possible to set different back-ends for the benchmarking? --> already done in grid2evaluate?
+- are inputs and outputs final? how to input chronics in CLI? able to compress whole folder? how to do in workflow?

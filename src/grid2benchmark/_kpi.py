@@ -1,9 +1,7 @@
-"""KPI evaluation logic for benchmark episode outputs.
+"""KPI evaluation logic powered by grid2evaluate.
 
-This module combines:
-
-- manual KPIs computed directly from episode metadata,
-- optional grid2evaluate KPIs computed from EnvRecorder outputs.
+The benchmark forwards requested KPI names to grid2evaluate and returns the
+raw KPI payloads unchanged.
 """
 
 from __future__ import annotations
@@ -17,70 +15,29 @@ from ._config import AVAILABLE_KPI_NAMES
 logger = logging.getLogger(__name__)
 
 
-def _compute_manual_kpis(
-    episode_results: list[dict[str, Any]],
-    selected_kpis: set[str],
-) -> dict[str, Any]:
-    """Compute manual KPIs directly from episode-level runtime data.
-
-    Args:
-        episode_results: Episode dictionaries produced by the runner.
-        selected_kpis: KPI names requested by the caller.
-
-    Returns:
-        Dictionary with the subset of manual KPI blocks requested.
-    """
-    total_steps = sum(e["steps"] for e in episode_results)
-    total_violations = sum(e["overload_violations"] for e in episode_results)
-    total_runtime = sum(e["runtime_seconds"] for e in episode_results)
-
-    manual: dict[str, Any] = {}
-
-    if "survival" in selected_kpis:
-        manual["survival"] = {
-            "episode_lengths": [e["steps"] for e in episode_results],
-            "average_episode_length": total_steps / len(episode_results),
-        }
-
-    if "violations" in selected_kpis:
-        manual["violations"] = {
-            "overload_violations_per_episode": [
-                e["overload_violations"] for e in episode_results
-            ],
-            "total_overload_violations": total_violations,
-        }
-
-    if "latency" in selected_kpis:
-        manual["latency"] = {
-            "runtime_seconds_per_episode": [
-                e["runtime_seconds"] for e in episode_results
-            ],
-            "total_runtime_seconds": total_runtime,
-            "average_runtime_seconds": total_runtime / len(episode_results),
-        }
-
-    return manual
-
-
 def evaluate_kpis(
     record_directory: Path,
     episode_results: list[dict[str, Any]],
     kpis: tuple[str, ...],
 ) -> dict[str, Any]:
-    """Evaluate selected KPIs using manual and optional grid2evaluate backends.
+    """Evaluate selected KPIs using grid2evaluate only.
 
     Args:
         record_directory: Directory containing EnvRecorder files.
         episode_results: Episode dictionaries returned by simulation.
+            Present for API compatibility; not used directly.
         kpis: Names of KPIs to compute.
 
     Returns:
-        KPI dictionary containing requested metrics and an
-        ``evaluation_backend`` marker.
+        KPI dictionary containing requested grid2evaluate metrics and an
+        ``evaluation_backend`` marker set to ``"grid2evaluate"``.
 
     Raises:
         ValueError: If unknown KPI names are requested.
+        RuntimeError: If grid2evaluate cannot be imported or KPI computation fails.
     """
+    del episode_results
+
     selected_kpis = set(kpis)
     invalid_kpis = selected_kpis - set(AVAILABLE_KPI_NAMES)
     if invalid_kpis:
@@ -88,55 +45,39 @@ def evaluate_kpis(
             f"Unknown KPI(s): {sorted(invalid_kpis)}. Allowed values: {AVAILABLE_KPI_NAMES}"
         )
 
-    result_kpis = _compute_manual_kpis(episode_results, selected_kpis)
-
-    selected_g2e_kpis = {
-        "carbon_intensity",
-        "operation_score",
-        "topological_action_complexity",
-    } & selected_kpis
-
-    if not selected_g2e_kpis:
-        result_kpis["evaluation_backend"] = "manual_only"
-        return result_kpis
-
     try:
         from grid2evaluate.carbon_intensity_kpi import CarbonIntensityKpi  # type: ignore
         from grid2evaluate.operation_score_kpi import OperationScoreKpi  # type: ignore
         from grid2evaluate.topological_action_complexity_kpi import (  # type: ignore
             TopologicalActionComplexityKpi,
         )
-
-        errors: dict[str, str] = {}
-        g2e_metrics: dict[str, Any] = {}
-
-        for name, kpi_cls in [
-            ("carbon_intensity", CarbonIntensityKpi),
-            ("operation_score", OperationScoreKpi),
-            ("topological_action_complexity", TopologicalActionComplexityKpi),
-        ]:
-            if name not in selected_g2e_kpis:
-                continue
-            try:
-                g2e_metrics[name] = kpi_cls().evaluate(record_directory)
-            except Exception as exc:
-                errors[name] = str(exc)
-
-        if g2e_metrics:
-            result_kpis.update(g2e_metrics)
-            result_kpis["evaluation_backend"] = (
-                "grid2evaluate" if not errors else "grid2evaluate_partial"
-            )
-            if errors:
-                result_kpis["grid2evaluate_errors"] = errors
-            return result_kpis
-
-        logger.warning(
-            "All grid2evaluate KPIs failed for record_dir=%s", record_directory
-        )
-
     except Exception as exc:
-        logger.warning("grid2evaluate evaluation failed: %s", exc)
+        raise RuntimeError(
+            "grid2evaluate is required to evaluate KPIs in this version"
+        ) from exc
 
-    result_kpis["evaluation_backend"] = "fallback_manual"
+    kpi_class_map = {
+        "carbon_intensity": CarbonIntensityKpi,
+        "operation_score": OperationScoreKpi,
+        "topological_action_complexity": TopologicalActionComplexityKpi,
+    }
+
+    result_kpis: dict[str, Any] = {}
+    errors: dict[str, str] = {}
+
+    for name in sorted(selected_kpis):
+        try:
+            result_kpis[name] = kpi_class_map[name]().evaluate(record_directory)
+        except Exception as exc:
+            errors[name] = str(exc)
+
+    if errors:
+        logger.error(
+            "grid2evaluate KPI evaluation failed for %s on record_dir=%s",
+            sorted(errors),
+            record_directory,
+        )
+        raise RuntimeError(f"grid2evaluate KPI evaluation failed for {sorted(errors)}")
+
+    result_kpis["evaluation_backend"] = "grid2evaluate"
     return result_kpis

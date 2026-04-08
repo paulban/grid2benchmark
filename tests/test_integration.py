@@ -41,7 +41,7 @@ def _default_config(**kwargs) -> BenchmarkConfig:
             ScenarioConfig(env_name="l2rpn_case14_sandbox", time_series_ids=(0,)),
         ),
         "max_steps": 5,
-        "kpis": ("survival", "violations", "latency"),
+        "kpis": ("carbon_intensity",),
     }
     base.update(kwargs)
     return BenchmarkConfig(**base)
@@ -126,12 +126,8 @@ class TestResultStructure:
     @pytest.mark.timeout(120)
     def test_summary_kpi_stats_present(self):
         result = run_benchmark(ALGORITHM_TEMPLATE, _default_config())
-        kpi_entry = result["summary"]["kpis"].get("survival")
-        assert kpi_entry is not None
-        assert "mean" in kpi_entry
-        assert "min" in kpi_entry
-        assert "max" in kpi_entry
-        assert "count" in kpi_entry
+        # grid2evaluate KPIs are intentionally not flattened into summary stats.
+        assert "carbon_intensity" not in result["summary"]["kpis"]
 
 
 # ---------------------------------------------------------------------------
@@ -142,31 +138,31 @@ class TestResultStructure:
 class TestKpiSelection:
     @pytest.mark.timeout(120)
     def test_only_selected_kpis_present(self):
-        config = _default_config(kpis=("survival",))
+        config = _default_config(kpis=("carbon_intensity",))
         result = run_benchmark(ALGORITHM_TEMPLATE, config)
         kpis = result["scenarios"][0]["kpis"]
-        assert "survival" in kpis
-        assert "violations" not in kpis
-        assert "carbon_intensity" not in kpis
+        assert "carbon_intensity" in kpis
+        assert "operation_score" not in kpis
+        assert "topological_action_complexity" not in kpis
 
     @pytest.mark.timeout(120)
-    def test_evaluation_backend_manual_when_no_g2e(self):
-        config = _default_config(kpis=("survival", "violations", "latency"))
+    def test_evaluation_backend_is_grid2evaluate(self):
+        config = _default_config(kpis=("carbon_intensity",))
         result = run_benchmark(ALGORITHM_TEMPLATE, config)
-        assert result["scenarios"][0]["kpis"]["evaluation_backend"] == "manual_only"
+        assert result["scenarios"][0]["kpis"]["evaluation_backend"] == "grid2evaluate"
 
     @pytest.mark.timeout(120)
     def test_carbon_intensity_triggers_g2e(self):
-        config = _default_config(kpis=("survival", "carbon_intensity"))
+        config = _default_config(kpis=("carbon_intensity",))
         result = run_benchmark(ALGORITHM_TEMPLATE, config)
         kpis = result["scenarios"][0]["kpis"]
         backend = kpis["evaluation_backend"]
-        assert backend in ("grid2evaluate", "grid2evaluate_partial", "fallback_manual")
+        assert backend == "grid2evaluate"
 
     @pytest.mark.timeout(120)
     def test_invalid_kpi_rejected(self):
         with pytest.raises(ValueError, match="Unknown KPI"):
-            _default_config(kpis=("survival", "imaginary_kpi"))
+            _default_config(kpis=("carbon_intensity", "imaginary_kpi"))
 
 
 # ---------------------------------------------------------------------------
@@ -183,7 +179,7 @@ class TestMultiScenario:
                 ScenarioConfig(env_name="l2rpn_case14_sandbox", time_series_ids=(1,)),
             ),
             max_steps=5,
-            kpis=("survival",),
+            kpis=("carbon_intensity",),
         )
         result = run_benchmark(ALGORITHM_TEMPLATE, config)
         assert len(result["scenarios"]) == 2
@@ -198,7 +194,7 @@ class TestMultiScenario:
                 ScenarioConfig(env_name="l2rpn_case14_sandbox", time_series_ids=(1,)),
             ),
             max_steps=5,
-            kpis=("survival",),
+            kpis=("carbon_intensity",),
         )
         result = run_benchmark(ALGORITHM_TEMPLATE, config)
         assert result["scenarios"][0]["scenario_index"] == 0
@@ -235,7 +231,7 @@ class TestAlgorithmContext:
         module = load_algorithm(_CONTEXT_CAPTURE_SRC)
         validate_algorithm(module)
 
-        config = _default_config(kpis=("survival",))
+        config = _default_config(kpis=("carbon_intensity",))
         run_scenarios(config, module)
 
         captured = module.captured
@@ -260,7 +256,7 @@ class TestAlgorithmContext:
                 ),
             ),
             max_steps=5,
-            kpis=("survival",),
+            kpis=("carbon_intensity",),
         )
         run_scenarios(config, module)
 
