@@ -17,7 +17,6 @@ from grid2benchmark._config import (
     SUPPORTED_BACKENDS,
 )
 
-
 # ---------------------------------------------------------------------------
 # ScenarioConfig
 # ---------------------------------------------------------------------------
@@ -129,6 +128,44 @@ class TestTopologySource:
         with pytest.raises(ValueError, match=".json extension"):
             TopologySource(format="pandapower", path=topo_file)
 
+    # --- pypowsybl ---
+
+    def test_valid_pypowsybl_xml_file(self, tmp_path: Path):
+        xml_file = tmp_path / "network.xml"
+        xml_file.write_text("<network/>", encoding="utf-8")
+        src = TopologySource(format="pypowsybl", path=xml_file)
+        assert src.path == xml_file
+        assert src.format == "pypowsybl"
+
+    def test_pypowsybl_non_xml_raises(self, tmp_path: Path):
+        f = tmp_path / "network.json"
+        f.write_text("{}", encoding="utf-8")
+        with pytest.raises(ValueError, match=".xml or .xiidm extension"):
+            TopologySource(format="pypowsybl", path=f)
+
+    def test_pypowsybl_directory_raises(self, tmp_path: Path):
+        with pytest.raises(ValueError, match="must be a file"):
+            TopologySource(format="pypowsybl", path=tmp_path)
+
+    # --- cgmes ---
+
+    def test_valid_cgmes_directory(self, tmp_path: Path):
+        cgmes_dir = tmp_path / "cgmes"
+        cgmes_dir.mkdir()
+        src = TopologySource(format="cgmes", path=cgmes_dir)
+        assert src.path == cgmes_dir
+        assert src.format == "cgmes"
+
+    def test_cgmes_file_instead_of_dir_raises(self, tmp_path: Path):
+        xml_file = tmp_path / "EQ.xml"
+        xml_file.write_text("<network/>", encoding="utf-8")
+        with pytest.raises(ValueError, match="must be a directory"):
+            TopologySource(format="cgmes", path=xml_file)
+
+    def test_cgmes_missing_path_raises(self, tmp_path: Path):
+        with pytest.raises(ValueError, match="does not exist"):
+            TopologySource(format="cgmes", path=tmp_path / "missing_dir")
+
 
 class TestTimeSeriesSource:
     def test_valid_directory(self, tmp_path: Path):
@@ -141,7 +178,7 @@ class TestTimeSeriesSource:
         chronics_dir = tmp_path / "chronics"
         chronics_dir.mkdir()
         with pytest.raises(ValueError, match="Unsupported time series format"):
-            TimeSeriesSource(format="csv", path=chronics_dir)
+            TimeSeriesSource(format="hdf5", path=chronics_dir)
 
     def test_missing_path_raises(self, tmp_path: Path):
         with pytest.raises(ValueError, match="does not exist"):
@@ -155,6 +192,34 @@ class TestTimeSeriesSource:
         file_path.write_text("x", encoding="utf-8")
         with pytest.raises(ValueError, match="must be a directory"):
             TimeSeriesSource(format="grid2op_chronics_dir", path=file_path)
+
+    # --- csv ---
+
+    def test_valid_csv_directory(self, tmp_path: Path):
+        csv_dir = tmp_path / "timeseries"
+        csv_dir.mkdir()
+        src = TimeSeriesSource(format="csv", path=csv_dir)
+        assert src.path == csv_dir
+        assert src.format == "csv"
+
+    def test_csv_missing_path_raises(self, tmp_path: Path):
+        with pytest.raises(ValueError, match="does not exist"):
+            TimeSeriesSource(format="csv", path=tmp_path / "missing")
+
+    def test_csv_file_instead_of_dir_raises(self, tmp_path: Path):
+        f = tmp_path / "data.csv"
+        f.write_text("a,b\n1,2\n", encoding="utf-8")
+        with pytest.raises(ValueError, match="must be a directory"):
+            TimeSeriesSource(format="csv", path=f)
+
+    # --- parquet ---
+
+    def test_valid_parquet_directory(self, tmp_path: Path):
+        pq_dir = tmp_path / "parquet_ts"
+        pq_dir.mkdir()
+        src = TimeSeriesSource(format="parquet", path=pq_dir)
+        assert src.path == pq_dir
+        assert src.format == "parquet"
 
 
 # ---------------------------------------------------------------------------

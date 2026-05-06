@@ -1,34 +1,16 @@
-"""Source adapters for topology and time-series scenario inputs.
-
-This module translates high-level ScenarioConfig sources to keyword arguments
-accepted by ``grid2op.make``.
-"""
+"""Source adapters for topology and time-series scenario inputs."""
 
 from __future__ import annotations
 
+import tempfile
 from typing import Any
 
 from ._config import ScenarioConfig
+from ._converter import build_env_dir, needs_conversion
 
 
 def _resolve_backend(scenario: ScenarioConfig) -> Any:
-    """Return the Grid2Op backend instance for the scenario.
-
-    When ``scenario.backend`` is ``None`` and a topology source is provided the
-    default ``PandaPowerBackend`` is used, preserving the pre-backend-selection
-    behaviour.  When no topology is provided and no explicit backend is set,
-    ``None`` is returned so Grid2Op can apply its own default.
-
-    Args:
-        scenario: Scenario configuration with optional ``backend`` and
-            ``topology`` fields.
-
-    Returns:
-        An instantiated Grid2Op backend, or ``None``.
-
-    Raises:
-        ImportError: If the requested backend package is not installed.
-    """
+    """Return the Grid2Op backend instance for the scenario."""
     backend_name = scenario.backend
 
     if backend_name is None:
@@ -62,36 +44,45 @@ def _resolve_backend(scenario: ScenarioConfig) -> Any:
         except ImportError as exc:
             raise ImportError(
                 "pypowsybl2grid is required for the 'pypowsybl' backend. "
-                "Install it with: pip install pypowsybl2grid "
-                "or: uv add pypowsybl2grid"
+                "Install it with: pip install pypowsybl2grid"
             ) from exc
 
-    # Validation in ScenarioConfig.__post_init__ should prevent this.
     raise ValueError(f"Unknown backend: {backend_name!r}")  # pragma: no cover
 
 
 def build_make_kwargs(scenario: ScenarioConfig) -> dict[str, Any]:
-    """Build kwargs for ``grid2op.make`` based on scenario source config.
-
-    Args:
-        scenario: Scenario configuration with optional topology, time-series,
-            and backend fields.
-
-    Returns:
-        Dictionary of keyword arguments consumable by ``grid2op.make``.
-    """
+    """Build kwargs for grid2op.make based on scenario source config."""
     make_kwargs: dict[str, Any] = {"test": True}
 
     backend = _resolve_backend(scenario)
     if backend is not None:
         make_kwargs["backend"] = backend
 
-    if scenario.topology is not None:
-        if scenario.topology.format == "pandapower":
-            make_kwargs["grid_path"] = str(scenario.topology.path)
+    if scenario.topology is not None and scenario.topology.format == "pandapower":
+        make_kwargs["grid_path"] = str(scenario.topology.path)
 
-    if scenario.time_series is not None:
-        if scenario.time_series.format == "grid2op_chronics_dir":
-            make_kwargs["chronics_path"] = str(scenario.time_series.path)
+    if (
+        scenario.time_series is not None
+        and scenario.time_series.format == "grid2op_chronics_dir"
+    ):
+        make_kwargs["chronics_path"] = str(scenario.time_series.path)
 
     return make_kwargs
+
+
+def prepare_scenario(
+    scenario: ScenarioConfig,
+) -> tuple[str, dict[str, Any], tempfile.TemporaryDirectory | None]:  # type: ignore[type-arg]
+    """Prepare env name, kwargs and optional temp directory for a scenario."""
+    if needs_conversion(scenario.topology, scenario.time_series):
+        result = build_env_dir(scenario.topology, scenario.time_series)
+        make_kwargs: dict[str, Any] = {"test": True, **result.extra_make_kwargs}
+
+        # Explicit scenario backend overrides converter defaults.
+        explicit_backend = _resolve_backend(scenario)
+        if explicit_backend is not None:
+            make_kwargs["backend"] = explicit_backend
+
+        return result.tmp_dir.name, make_kwargs, result.tmp_dir
+
+    return scenario.env_name, build_make_kwargs(scenario), None

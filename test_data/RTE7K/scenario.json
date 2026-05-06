@@ -1,0 +1,10 @@
+[
+  {
+    "env_name": "rte7K_example",
+    "backend": "pypowsybl",
+    "topology": {
+      "format": "pypowsybl",
+      "path": "test_data/RTE7K/initial_snapshot.xiidm"
+    }
+  }
+]

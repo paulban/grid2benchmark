@@ -18,8 +18,8 @@ AVAILABLE_KPI_NAMES = (
     "topological_action_complexity",
 )
 DEFAULT_KPIS = AVAILABLE_KPI_NAMES
-SUPPORTED_TOPOLOGY_FORMATS = ("pandapower",)
-SUPPORTED_TIME_SERIES_FORMATS = ("grid2op_chronics_dir",)
+SUPPORTED_TOPOLOGY_FORMATS = ("pandapower", "pypowsybl", "cgmes")
+SUPPORTED_TIME_SERIES_FORMATS = ("grid2op_chronics_dir", "csv", "parquet")
 SUPPORTED_BACKENDS = ("pandapower", "lightsim2grid", "pypowsybl")
 
 
@@ -28,8 +28,11 @@ class TopologySource:
     """Topology source description for one scenario.
 
     Attributes:
-        format: Topology format identifier. Phase 1 supports ``pandapower``.
-        path: Filesystem path to the topology file.
+        format: Topology format identifier. Supported values:
+            ``pandapower`` (pandapower ``.json`` file),
+            ``pypowsybl`` (IIDM ``.xml`` file),
+            ``cgmes`` (directory containing CGMES XML profile files).
+        path: Filesystem path to the topology file or directory.
     """
 
     format: str
@@ -46,11 +49,24 @@ class TopologySource:
         object.__setattr__(self, "path", Path(self.path))
         if not self.path.exists():
             raise ValueError(f"Topology path does not exist: {self.path}")
-        if not self.path.is_file():
-            raise ValueError(f"Topology path must be a file: {self.path}")
 
-        if self.format == "pandapower" and self.path.suffix.lower() != ".json":
-            raise ValueError("Pandapower topology file must use .json extension")
+        if self.format == "cgmes":
+            if not self.path.is_dir():
+                raise ValueError(
+                    "CGMES topology path must be a directory containing XML profile files"
+                )
+        elif self.format == "pypowsybl":
+            if not self.path.is_file():
+                raise ValueError("pypowsybl topology path must be a file")
+            if self.path.suffix.lower() not in (".xml", ".xiidm"):
+                raise ValueError(
+                    "pypowsybl topology file must use .xml or .xiidm extension"
+                )
+        else:  # pandapower
+            if not self.path.is_file():
+                raise ValueError(f"Topology path must be a file: {self.path}")
+            if self.path.suffix.lower() != ".json":
+                raise ValueError("Pandapower topology file must use .json extension")
 
 
 @dataclass(frozen=True)
@@ -58,9 +74,11 @@ class TimeSeriesSource:
     """Time-series source description for one scenario.
 
     Attributes:
-        format: Time-series format identifier. Phase 1 supports
-            ``grid2op_chronics_dir``.
-        path: Directory containing Grid2Op-compatible chronic files.
+        format: Time-series format identifier. Supported values:
+            ``grid2op_chronics_dir`` (directory of Grid2Op chronic subdirs),
+            ``csv`` (directory of CSV files, one per quantity),
+            ``parquet`` (directory of Parquet files, one per quantity).
+        path: Directory containing the time-series data.
     """
 
     format: str

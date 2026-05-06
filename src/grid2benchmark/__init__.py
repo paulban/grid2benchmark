@@ -14,6 +14,7 @@ from pathlib import Path
 
 from ._algorithm import load_algorithm, load_algorithm_from_file, validate_algorithm
 from ._config import BenchmarkConfig, ScenarioConfig, TimeSeriesSource, TopologySource
+from ._converter import EnvDirResult, build_env_dir, needs_conversion
 from ._runner import run_scenarios
 
 __all__ = [
@@ -22,6 +23,9 @@ __all__ = [
     "ScenarioConfig",
     "TopologySource",
     "TimeSeriesSource",
+    "EnvDirResult",
+    "build_env_dir",
+    "needs_conversion",
 ]
 
 

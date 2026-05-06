@@ -21,7 +21,7 @@ from typing import Any
 
 from ._config import BenchmarkConfig, REQUIRED_ALGORITHM_FUNCTION, ScenarioConfig
 from ._kpi import evaluate_kpis
-from ._sources import build_make_kwargs
+from ._sources import build_make_kwargs, prepare_scenario
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,12 @@ def _resolve_time_series_ids(env: Any, scenario: ScenarioConfig) -> list[int]:
 
 
 def _make_env(grid2op_module: Any, scenario: ScenarioConfig) -> Any:
-    """Create a Grid2Op environment from scenario configuration."""
+    """Create a Grid2Op environment from scenario configuration.
+
+    This function handles only natively-supported formats (pandapower JSON +
+    grid2op_chronics_dir).  For scenarios that require format conversion use
+    :func:`._sources.prepare_scenario` directly.
+    """
     return grid2op_module.make(scenario.env_name, **build_make_kwargs(scenario))
 
 
@@ -192,7 +197,13 @@ def run_scenarios(config: BenchmarkConfig, module: ModuleType) -> dict[str, Any]
     scenario_results: list[dict[str, Any]] = []
 
     for scenario_idx, scenario in enumerate(config.scenarios):
-        env = _make_env(grid2op, scenario)
+        env_name, make_kwargs, tmp_dir = prepare_scenario(scenario)
+        try:
+            env = grid2op.make(env_name, **make_kwargs)
+        except Exception:
+            if tmp_dir is not None:
+                tmp_dir.cleanup()
+            raise
         time_series_ids = _resolve_time_series_ids(env, scenario)
 
         with tempfile.TemporaryDirectory(prefix="benchmark_record_") as record_dir:
@@ -248,6 +259,10 @@ def run_scenarios(config: BenchmarkConfig, module: ModuleType) -> dict[str, Any]
                 ]
 
             kpis = evaluate_kpis(record_path, episode_results, config.kpis)
+
+        if tmp_dir is not None:
+            tmp_dir.cleanup()
+            tmp_dir = None
 
         scenario_results.append(
             {
