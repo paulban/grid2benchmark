@@ -8,6 +8,7 @@ import pytest
 
 from grid2benchmark._config import (
     AVAILABLE_KPI_NAMES,
+    COMPATIBLE_BACKENDS_BY_TOPOLOGY,
     DEFAULT_ENV_NAME,
     DEFAULT_MAX_STEPS,
     BenchmarkConfig,
@@ -70,6 +71,14 @@ class TestScenarioConfigBackend:
         assert "lightsim2grid" in SUPPORTED_BACKENDS
         assert "pypowsybl" in SUPPORTED_BACKENDS
 
+    def test_compatible_backends_constant(self):
+        assert COMPATIBLE_BACKENDS_BY_TOPOLOGY["pandapower"] == (
+            "pandapower",
+            "lightsim2grid",
+        )
+        assert COMPATIBLE_BACKENDS_BY_TOPOLOGY["pypowsybl"] == ("pypowsybl",)
+        assert COMPATIBLE_BACKENDS_BY_TOPOLOGY["cgmes"] == ("pypowsybl",)
+
 
 class TestScenarioConfigValidation:
     def test_empty_env_name_raises(self):
@@ -97,6 +106,47 @@ class TestScenarioConfigValidation:
         sc = ScenarioConfig()
         with pytest.raises((AttributeError, TypeError)):
             sc.env_name = "other"  # type: ignore[misc]
+
+    def test_pandapower_topology_accepts_lightsim2grid_backend(self, tmp_path: Path):
+        topo_file = tmp_path / "grid.json"
+        topo_file.write_text("{}", encoding="utf-8")
+
+        sc = ScenarioConfig(
+            topology=TopologySource(format="pandapower", path=topo_file),
+            backend="lightsim2grid",
+        )
+
+        assert sc.backend == "lightsim2grid"
+
+    def test_pandapower_topology_rejects_pypowsybl_backend(self, tmp_path: Path):
+        topo_file = tmp_path / "grid.json"
+        topo_file.write_text("{}", encoding="utf-8")
+
+        with pytest.raises(ValueError, match="not compatible"):
+            ScenarioConfig(
+                topology=TopologySource(format="pandapower", path=topo_file),
+                backend="pypowsybl",
+            )
+
+    def test_pypowsybl_topology_rejects_pandapower_backend(self, tmp_path: Path):
+        xml_file = tmp_path / "network.xiidm"
+        xml_file.write_text("<network/>", encoding="utf-8")
+
+        with pytest.raises(ValueError, match="not compatible"):
+            ScenarioConfig(
+                topology=TopologySource(format="pypowsybl", path=xml_file),
+                backend="pandapower",
+            )
+
+    def test_cgmes_topology_rejects_lightsim2grid_backend(self, tmp_path: Path):
+        cgmes_dir = tmp_path / "cgmes"
+        cgmes_dir.mkdir()
+
+        with pytest.raises(ValueError, match="not compatible"):
+            ScenarioConfig(
+                topology=TopologySource(format="cgmes", path=cgmes_dir),
+                backend="lightsim2grid",
+            )
 
 
 class TestTopologySource:

@@ -143,8 +143,10 @@ class TestResolveBackend:
         mock_backend.assert_called_once()
         assert backend is mock_backend.return_value
 
-    def test_explicit_backend_overrides_topology_default(self, tmp_path: Path):
-        """When backend is explicit, it wins even if topology is set."""
+    def test_explicit_compatible_backend_overrides_topology_default(
+        self, tmp_path: Path
+    ):
+        """A compatible explicit backend wins even if topology is set."""
         topo_file = tmp_path / "grid.json"
         topo_file.write_text("{}", encoding="utf-8")
         mock_backend = MagicMock()

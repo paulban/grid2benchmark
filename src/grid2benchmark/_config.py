@@ -21,6 +21,11 @@ DEFAULT_KPIS = AVAILABLE_KPI_NAMES
 SUPPORTED_TOPOLOGY_FORMATS = ("pandapower", "pypowsybl", "cgmes")
 SUPPORTED_TIME_SERIES_FORMATS = ("grid2op_chronics_dir", "csv", "parquet")
 SUPPORTED_BACKENDS = ("pandapower", "lightsim2grid", "pypowsybl")
+COMPATIBLE_BACKENDS_BY_TOPOLOGY = {
+    "pandapower": ("pandapower", "lightsim2grid"),
+    "pypowsybl": ("pypowsybl",),
+    "cgmes": ("pypowsybl",),
+}
 
 
 @dataclass(frozen=True)
@@ -131,6 +136,15 @@ class ScenarioConfig:
                 f"Unsupported backend '{self.backend}'. "
                 f"Allowed values: {SUPPORTED_BACKENDS}"
             )
+
+        if self.topology is not None and self.backend is not None:
+            allowed_backends = COMPATIBLE_BACKENDS_BY_TOPOLOGY[self.topology.format]
+            if self.backend not in allowed_backends:
+                raise ValueError(
+                    f"Backend '{self.backend}' is not compatible with topology "
+                    f"format '{self.topology.format}'. Allowed values: "
+                    f"{allowed_backends}"
+                )
 
         if self.time_series_ids is not None:
             object.__setattr__(self, "time_series_ids", tuple(self.time_series_ids))
