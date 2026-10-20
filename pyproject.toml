@@ -13,6 +13,7 @@ dependencies = [
     "numpy>=1.26.4",
     "pyarrow>=14.0",
     "numba>=0.64.0",
+    "torch",
 ]
 
 [project.scripts]
@@ -22,6 +23,12 @@ grid2benchmark = "grid2benchmark.cli:main"
 grid2evaluate = { git = "https://github.com/AI4REALNET/grid2evaluate" }
 grid2op = { git = "https://github.com/Grid2op/grid2op.git", rev = "env_recorder" }
 pypowsybl2grid = { git = "https://github.com/Grid2op/pypowsybl2grid.git" }
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.uv]
 package = true
