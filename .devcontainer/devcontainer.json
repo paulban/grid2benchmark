@@ -1,0 +1,26 @@
+{
+  "name": "grid2benchmark",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "vscode",
+  "mounts": [
+    // Keep the container's virtualenv separate from a host (Windows) .venv.
+    "source=grid2benchmark-venv,target=${containerWorkspaceFolder}/.venv,type=volume",
+    "source=grid2benchmark-uv-cache,target=/home/vscode/.cache/uv,type=volume"
+  ],
+  "postCreateCommand": "sudo chown -R vscode:vscode .venv /home/vscode/.cache/uv && uv sync --group dev",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"]
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter"
+      ]
+    }
+  }
+}

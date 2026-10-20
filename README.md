@@ -37,6 +37,14 @@ If you need development dependencies:
 uv sync --group dev
 ```
 
+### Dev container
+
+A [dev container](https://containers.dev/) is provided in `.devcontainer/`. Open the
+repository in VS Code and choose **Dev Containers: Reopen in Container**; the
+environment (including dev dependencies) is installed with `uv sync --group dev`
+on first start. The container's `.venv` lives in a Docker volume, so it does not
+clash with a virtualenv on the host.
+
 ## Quick Start (CLI)
 
 Run a single scenario:
