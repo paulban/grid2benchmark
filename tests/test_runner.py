@@ -9,6 +9,7 @@ from typing import Any
 
 import pytest
 
+from grid2benchmark._config import AVAILABLE_KPI_NAMES
 from grid2benchmark._runner import _aggregate_summary, _extract_numeric_values
 
 
@@ -156,15 +157,20 @@ class TestAggregateSummary:
                 0,
                 [_episode()],
                 {
+                    "assistant_alert_accuracy": [[0, 1, 0, 0], [1, 0, 0, 0]],
                     "carbon_intensity": {
                         "per_step": [100.0, 120.0],
                         "metadata": {"unit": "gCO2eq/kWh"},
-                    }
+                    },
+                    "network_utilization": [0.9, 1.2, 0.4, 0.6, 0.0, 5.0, 0, 3],
+                    "operation_score": [1.0],
+                    "topological_action_complexity": [2.0],
                 },
             )
         ]
         summary = _aggregate_summary(results)
-        assert "carbon_intensity" not in summary["kpis"]
+        for name in AVAILABLE_KPI_NAMES:
+            assert name not in summary["kpis"]
 
     def test_empty_scenario_results(self):
         summary = _aggregate_summary([])

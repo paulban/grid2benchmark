@@ -19,7 +19,12 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-from ._config import BenchmarkConfig, REQUIRED_ALGORITHM_FUNCTION, ScenarioConfig
+from ._config import (
+    AVAILABLE_KPI_NAMES,
+    BenchmarkConfig,
+    REQUIRED_ALGORITHM_FUNCTION,
+    ScenarioConfig,
+)
 from ._kpi import evaluate_kpis
 from ._sources import build_make_kwargs, prepare_scenario
 
@@ -139,11 +144,7 @@ def _aggregate_summary(scenario_results: list[dict[str, Any]]) -> dict[str, Any]
     """
     # grid2evaluate KPIs can be rich nested payloads. Keep them in per-scenario
     # outputs only and avoid flattening them into numeric summary stats.
-    grid2evaluate_kpi_names = {
-        "carbon_intensity",
-        "operation_score",
-        "topological_action_complexity",
-    }
+    grid2evaluate_kpi_names = set(AVAILABLE_KPI_NAMES)
 
     per_key_values: dict[str, list[float]] = {}
     total_episodes = 0
