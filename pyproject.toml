@@ -13,6 +13,11 @@ dependencies = [
     "numpy>=1.26.4",
     "pyarrow>=14.0",
     "numba>=0.64.0",
+]
+
+[project.optional-dependencies]
+# Only needed by algorithms that run torch models (e.g. examples/torch_random_agent.py)
+torch = [
     "torch",
 ]
 

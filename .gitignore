@@ -10,4 +10,4 @@ wheels/
 .venv
 
 #output
-results.json
+result.json

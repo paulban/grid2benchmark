@@ -5,6 +5,8 @@ the "model" directory next to this script to load pre-defined weights. If no mod
 itself is used to simulate inference. This agent is intended only to simulate action building from a neural network.
 
 Note: To ensure valid actions are returned, the agent samples from the action space rather than using model outputs.
+
+Requires the optional ``torch`` extra: ``uv sync --extra torch``.
 """
 
 from __future__ import annotations

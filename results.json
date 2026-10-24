@@ -1,0 +1,60 @@
+{
+  "environment": {
+    "env_name": "l2rpn_case14_sandbox",
+    "fixed_environment": true
+  },
+  "episodes": [
+    {
+      "episode_index": 0,
+      "steps": 200,
+      "overload_violations": 0,
+      "runtime_seconds": 3.370153700001538,
+      "terminated": false
+    }
+  ],
+  "kpis": {
+    "survival": {
+      "episode_lengths": [
+        200
+      ],
+      "average_episode_length": 200.0
+    },
+    "violations": {
+      "overload_violations_per_episode": [
+        0
+      ],
+      "total_overload_violations": 0
+    },
+    "latency": {
+      "runtime_seconds_per_episode": [
+        3.370153700001538
+      ],
+      "total_runtime_seconds": 3.370153700001538,
+      "average_runtime_seconds": 3.370153700001538
+    },
+    "grid2evaluate": {
+      "carbon_intensity": [
+        229.83929645797565
+      ],
+      "operation_score": [
+        0,
+        0,
+        0.0,
+        0.0,
+        0,
+        3651.2760829925546,
+        57.13441558244712,
+        0.0
+      ],
+      "topological_action_complexity": [
+        0,
+        0,
+        0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "evaluation_backend": "grid2evaluate"
+  }
+}

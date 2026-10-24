@@ -1,0 +1,78 @@
+{
+  "scenarios": [
+    {
+      "scenario_index": 0,
+      "environment": {
+        "env_name": "rte_case118_example",
+        "topology": {
+          "format": "pandapower",
+          "path": "test_data\\rte_case118_example\\grid.json"
+        },
+        "time_series": {
+          "format": "grid2op_chronics_dir",
+          "path": "test_data\\rte_case118_example\\chronics"
+        },
+        "fixed_environment": true
+      },
+      "executed_time_series_ids": [
+        0
+      ],
+      "episodes": [
+        {
+          "episode_index": 0,
+          "time_series_id": 0,
+          "steps": 20,
+          "overload_violations": 0,
+          "runtime_seconds": 0.42111889994703233,
+          "terminated": false
+        }
+      ],
+      "kpis": {
+        "survival": {
+          "episode_lengths": [
+            20
+          ],
+          "average_episode_length": 20.0
+        },
+        "violations": {
+          "overload_violations_per_episode": [
+            0
+          ],
+          "total_overload_violations": 0
+        },
+        "latency": {
+          "runtime_seconds_per_episode": [
+            0.42111889994703233
+          ],
+          "total_runtime_seconds": 0.42111889994703233,
+          "average_runtime_seconds": 0.42111889994703233
+        },
+        "evaluation_backend": "manual_only"
+      }
+    }
+  ],
+  "summary": {
+    "scenario_count": 1,
+    "episode_count": 1,
+    "kpis": {
+      "survival": {
+        "mean": 20.0,
+        "min": 20.0,
+        "max": 20.0,
+        "count": 2
+      },
+      "violations": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "count": 2
+      },
+      "latency": {
+        "mean": 0.42111889994703233,
+        "min": 0.42111889994703233,
+        "max": 0.42111889994703233,
+        "count": 3
+      }
+    }
+  }
+}

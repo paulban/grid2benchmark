@@ -37,6 +37,13 @@ If you need development dependencies:
 uv sync --group dev
 ```
 
+Algorithms that run PyTorch models (e.g. `examples/torch_random_agent.py`) need
+the optional `torch` extra, which installs the CPU build of PyTorch:
+
+```bash
+uv sync --extra torch
+```
+
 ### Dev container
 
 A [dev container](https://containers.dev/) is provided in `.devcontainer/`. Open the
