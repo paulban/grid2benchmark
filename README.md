@@ -18,7 +18,7 @@ Current implementation status for external data inputs:
 - Scenario-based benchmarking (`ScenarioConfig`)
 - Explicit topology/time-series sources per scenario (`TopologySource`, `TimeSeriesSource`)
 - Time-series selection per scenario (`time_series_ids`)
-- KPI filtering (`carbon_intensity`, `operation_score`, `topological_action_complexity`)
+- KPI filtering (`carbon_intensity`, `operation_score`, `topological_action_complexity` by default; opt-in `network_utilization`, `assistant_alert_accuracy`)
 - Python API for orchestration systems
 - CLI entry point for local runs
 - Structured JSON output suitable for storage and downstream analytics
@@ -260,6 +260,22 @@ Each scenario entry includes:
 - `executed_time_series_ids`
 - `episodes`
 - `kpis`
+
+## Known Issues
+
+- `network_utilization` fails on `l2rpn_case14_sandbox` because of a bug in
+  [grid2evaluate](https://github.com/AI4REALNET/grid2evaluate) (tested at commit `5b69649`).
+  grid2evaluate rebuilds the grid in pypowsybl and matches recorded elements by name:
+  - The case14 grid has no element names, so after conversion the grid2op names end up in
+    the pypowsybl element IDs and `name` is empty. `NetworkWrapper._get_voltage_level_id_from_name`
+    does not fall back to the ID (unlike `get_id_from_name`) and raises `IndexError`.
+  - The last transformer is named `6_8_19` in the recording but `8_6_19` in the converted
+    network (its two ends are swapped), so name matching fails even with that fallback.
+
+  This needs a fix upstream in grid2evaluate, so `network_utilization` is not part of the default KPIs.
+- `assistant_alert_accuracy` does not evaluate the benchmarked agent. It runs its own
+  simulations from the environment directory with grid2op's `AlertAgent` and returns `[]`
+  for environments without alertable lines (e.g. `l2rpn_case14_sandbox`).
 
 ## Testing
 

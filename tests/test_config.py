@@ -10,6 +10,7 @@ from grid2benchmark._config import (
     AVAILABLE_KPI_NAMES,
     COMPATIBLE_BACKENDS_BY_TOPOLOGY,
     DEFAULT_ENV_NAME,
+    DEFAULT_KPIS,
     DEFAULT_MAX_STEPS,
     BenchmarkConfig,
     ScenarioConfig,
@@ -282,9 +283,10 @@ class TestBenchmarkConfigDefaults:
         bc = BenchmarkConfig()
         assert bc.max_steps == DEFAULT_MAX_STEPS
 
-    def test_default_kpis_is_all(self):
+    def test_default_kpis(self):
         bc = BenchmarkConfig()
-        assert set(bc.kpis) == set(AVAILABLE_KPI_NAMES)
+        assert set(bc.kpis) == set(DEFAULT_KPIS)
+        assert set(DEFAULT_KPIS) <= set(AVAILABLE_KPI_NAMES)
 
     def test_default_scenarios_has_one_entry(self):
         bc = BenchmarkConfig()
@@ -341,7 +343,9 @@ class TestBenchmarkConfigValidation:
 class TestAvailableKpiNames:
     def test_known_g2e_kpis_present(self):
         for name in (
+            "assistant_alert_accuracy",
             "carbon_intensity",
+            "network_utilization",
             "operation_score",
             "topological_action_complexity",
         ):

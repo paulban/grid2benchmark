@@ -46,7 +46,12 @@ def evaluate_kpis(
         )
 
     try:
+        from grid2evaluate.assistant_alert_accuracy_kpi import (  # type: ignore
+            AssistantAlertAccuracyKpi,
+        )
         from grid2evaluate.carbon_intensity_kpi import CarbonIntensityKpi  # type: ignore
+        from grid2evaluate.env_data import EnvData  # type: ignore
+        from grid2evaluate.network_utilization_kpi import NetworkUtilizationKpi  # type: ignore
         from grid2evaluate.operation_score_kpi import OperationScoreKpi  # type: ignore
         from grid2evaluate.topological_action_complexity_kpi import (  # type: ignore
             TopologicalActionComplexityKpi,
@@ -57,17 +62,27 @@ def evaluate_kpis(
         ) from exc
 
     kpi_class_map = {
+        "assistant_alert_accuracy": AssistantAlertAccuracyKpi,
         "carbon_intensity": CarbonIntensityKpi,
+        "network_utilization": NetworkUtilizationKpi,
         "operation_score": OperationScoreKpi,
         "topological_action_complexity": TopologicalActionComplexityKpi,
     }
+
+    # Alert accuracy simulates its own episodes from the environment directory
+    # instead of reading the recorded run.
+    environment_kpis = {"assistant_alert_accuracy"}
 
     result_kpis: dict[str, Any] = {}
     errors: dict[str, str] = {}
 
     for name in sorted(selected_kpis):
         try:
-            result_kpis[name] = kpi_class_map[name]().evaluate(record_directory)
+            if name in environment_kpis:
+                kpi_input_directory = Path(EnvData.load(record_directory).json["path"])
+            else:
+                kpi_input_directory = record_directory
+            result_kpis[name] = kpi_class_map[name]().evaluate(kpi_input_directory)
         except Exception as exc:
             errors[name] = str(exc)
 

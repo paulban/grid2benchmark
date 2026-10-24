@@ -13,11 +13,20 @@ DEFAULT_ENV_NAME = "l2rpn_case14_sandbox"
 DEFAULT_MAX_STEPS = 200
 REQUIRED_ALGORITHM_FUNCTION = "build_agent"
 AVAILABLE_KPI_NAMES = (
+    "assistant_alert_accuracy",
+    "carbon_intensity",
+    "network_utilization",
+    "operation_score",
+    "topological_action_complexity",
+)
+# network_utilization fails on grids whose element names differ between grid2op
+# and the pypowsybl conversion (e.g. l2rpn_case14_sandbox), and
+# assistant_alert_accuracy runs its own simulations, so both are opt-in.
+DEFAULT_KPIS = (
     "carbon_intensity",
     "operation_score",
     "topological_action_complexity",
 )
-DEFAULT_KPIS = AVAILABLE_KPI_NAMES
 SUPPORTED_TOPOLOGY_FORMATS = ("pandapower", "pypowsybl", "cgmes")
 SUPPORTED_TIME_SERIES_FORMATS = ("grid2op_chronics_dir", "csv", "parquet")
 SUPPORTED_BACKENDS = ("pandapower", "lightsim2grid", "pypowsybl")

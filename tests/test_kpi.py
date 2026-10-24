@@ -36,7 +36,10 @@ class TestEvaluateKpis:
             "sys.modules",
             {
                 "grid2evaluate": None,
+                "grid2evaluate.assistant_alert_accuracy_kpi": None,
                 "grid2evaluate.carbon_intensity_kpi": None,
+                "grid2evaluate.env_data": None,
+                "grid2evaluate.network_utilization_kpi": None,
                 "grid2evaluate.operation_score_kpi": None,
                 "grid2evaluate.topological_action_complexity_kpi": None,
             },
@@ -61,6 +64,9 @@ class TestEvaluateKpis:
                 "grid2evaluate.carbon_intensity_kpi": MagicMock(
                     CarbonIntensityKpi=ci_mock
                 ),
+                "grid2evaluate.assistant_alert_accuracy_kpi": MagicMock(),
+                "grid2evaluate.env_data": MagicMock(),
+                "grid2evaluate.network_utilization_kpi": MagicMock(),
                 "grid2evaluate.operation_score_kpi": MagicMock(
                     OperationScoreKpi=os_mock
                 ),
@@ -88,6 +94,9 @@ class TestEvaluateKpis:
                 "grid2evaluate.carbon_intensity_kpi": MagicMock(
                     CarbonIntensityKpi=ci_mock
                 ),
+                "grid2evaluate.assistant_alert_accuracy_kpi": MagicMock(),
+                "grid2evaluate.env_data": MagicMock(),
+                "grid2evaluate.network_utilization_kpi": MagicMock(),
                 "grid2evaluate.operation_score_kpi": MagicMock(
                     OperationScoreKpi=MagicMock()
                 ),
